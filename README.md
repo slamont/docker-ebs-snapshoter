@@ -1,11 +1,13 @@
-slamontagne/ebs-snapshoter
+slamont/ebs-snapshoter
 ======================
 
 Docker container that periodically launch the creation of snapshot for given Amazon EBS ressources using [awscli](https://aws.amazon.com/cli/) and cron.
 
 ### Usage
 
-    docker run -d [options] slamontagne/ebs-snapshoter 
+    docker run -d [options] slamont/ebs-snapshoter [schedule|snapshot-once]
+
+
 
 #### Options
 
@@ -13,28 +15,61 @@ Docker container that periodically launch the creation of snapshot for given Ama
 | -------------------------------------------------   | ----------------- | -------- | --------------------------- |
 | -e ACCESS_KEY='AWS_KEY'                             | all               | yes      |  Your AWS key               |
 | -e SECRET_KEY='AWS_SECRET'                          | all               | yes      | Your AWS secret             |
-| -e CUSTOM_INSTANCE_ID='i-1234567890abcd'            | all               | no       | Used to override the script instance auto-detection |
+| -e CUSTOM_INSTANCE_ID='i-1234567890abcdefg'         | all               | no       | Used to override the script instance auto-detection |
 | -e CUSTOM_DATA_DEVICE='/dev/sdf'                    | all               | no       | Used to override the default device name |
 | -e CUSTOM_RETENTION_PERIOD='30 days'                | all               | no       | Used to override the script default retention period |
 | -e CRON_SCHEDULE='5 3 \* \* \*'                     | schedule          | no       | Specifies when cron job runs, see [format](http://en.wikipedia.org/wiki/Cron). Default is 5 3 \* \* \*, runs every night at 03:05 |
 
+#### Usage for snapshot.sh
+
+The entrypoint of the container will delegate execution if you provide something else than schedule or snapshot-once. For example, you can call the snapshot.sh script directly by doing this:
+
+    docker run -d [options] slamont/ebs-snapshoter /snapshot.sh [script options]
+
+
+##### Options for snapshot.sh
+
+| Options                      | Description |
+| ---------------------------  | ----------- |
+| -c <Snapshot Type>           | Create snapshot with type <Snapshot Type> |
+| -d <Existing Snapshot ID>    | Delete given Snapshot |
+| -l                           | List Snapshots of type Scheduled for volume |
+| -p                           | Purge old snapshots of type 'Scheduled' for volume |
+| -h                           | Display an help message |
+
+##### Environment Variables for snapshot.sh
+
+| Name                    | Description |
+| ----------------------- | ----------- |
+| CUSTOM_INSTANCE_ID      | If you want to force the script to use a specific EC2 instance instead of letting it figure it out. |
+| CUSTOM_DATA_DEVICE      | Is used to alter the default data device used by this script. ["/dev/sdf"] |
+| CUSTOM_RETENTION_PERIOD | Is used to configure the period Snapshot should be kept. Need to be a valid date input. ["7 days"] |
 
 ### Examples:
 
 Schedule Snapshot everyday at 12:00:
 
     docker run -d \
-      -e ACCESS_KEY=myawskey \
-      -e SECRET_KEY=myawssecret \
+      -e ACCESS_KEY='myawskey' \
+      -e SECRET_KEY='myawssecret' \
       -e CRON_SCHEDULE='0 12 * * *' \
-      slamontagne/ebs-snapshoter schedule
+      slamont/ebs-snapshoter schedule
 
 Snapshot once and then delete the container:
 
     docker run --rm \
-      -e ACCESS_KEY=myawskey \
-      -e SECRET_KEY=myawssecret \
-      slamontagne/ebs-snapshoter snapshot-once
+      -e ACCESS_KEY='myawskey' \
+      -e SECRET_KEY='myawssecret' \
+      slamont/ebs-snapshoter snapshot-once
+
+
+List all existing 'Scheduled' snapshot for data volume of the given instance:
+
+    docker run -it --rm \
+      -e ACCESS_KEY='myawskey' \
+      -e SECRET_KEY='myawssecret' \
+      -e CUSTOM_INSTANCE_ID='i-04c18cc574375b32e' \
+      slamont/ebs-snapshoter /snapshot.sh -l
 
 
 
