@@ -13,13 +13,17 @@ Docker container that periodically launch the creation of snapshot for given Ama
 
 | Name                                                | Operation         | Required | Description |
 | -------------------------------------------------   | ----------------- | -------- | --------------------------- |
-| -e ACCESS_KEY='AWS_KEY'                             | all               | yes      |  Your AWS key               |
-| -e SECRET_KEY='AWS_SECRET'                          | all               | yes      | Your AWS secret             |
+| -e ACCESS_KEY='AWS_KEY'                             | all               | no       | Your AWS key               |
+| -e SECRET_KEY='AWS_SECRET'                          | all               | no       | Your AWS secret             |
 | -e AWS_REGION='us-east-1'                           | all               | no       | Your AWS region. If not specified it will use 'us-east-1' as default |
 | -e CUSTOM_INSTANCE_ID='i-1234567890abcdefg'         | all               | no       | Used to override the script instance auto-detection |
 | -e CUSTOM_DATA_DEVICE='/dev/sdf'                    | all               | no       | Used to override the default device name. ** Be aware that it use the device name from the AWS API. It may be different under Linux.** In a Ubuntu 16.04, the volume with an AWS device name of '/dev/sdf' was detected as '/dev/xvdf', but we still need to use '/dev/sdf' for the script.  See [AWS Documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/device_naming.html) to better understand. |
 | -e CUSTOM_RETENTION_PERIOD='7 days'                 | all               | no       | Used to override the script default retention period |
 | -e CRON_SCHEDULE='5 3 \* \* \*'                     | schedule          | no       | Specifies when cron job runs, see [format](http://en.wikipedia.org/wiki/Cron). Default is ```5 3 * * *```, runs every night at 03:05 |
+
+__You need to provide either ACCESS_KEY and SECRET_KEY or an IAM Role need to be attached to the EC2 you're running on, otherwise it will fail__
+
+*The provided IAM Role requires the proper access to manage EBS Snapshots*
 
 #### Usage for snapshot.sh
 
@@ -71,6 +75,13 @@ List all existing 'Scheduled' snapshot for data volume of the given instance:
 docker run -it --rm \
   -e ACCESS_KEY='myawskey' \
   -e SECRET_KEY='myawssecret' \
+  -e CUSTOM_INSTANCE_ID='i-1234567890abcdefg' \
+  slamont/ebs-snapshoter /snapshot.sh -l
+```
+
+List all existing 'Scheduled' snapshot for data volume of the given instance when running from an EC2 with a role attached:
+```
+docker run -it --rm \
   -e CUSTOM_INSTANCE_ID='i-1234567890abcdefg' \
   slamont/ebs-snapshoter /snapshot.sh -l
 ```
